@@ -96,7 +96,7 @@ class WechatImmediateDelivery extends WechatBase
      */
     public function send($api, $arg)
     {
-        $res = $this->getClient()->setPostDataType(WechatHttpClient::POST_DATA_TYPE_FORM_PARAMS)->post($api, $arg);
+        $res = $this->getClient()->setPostDataType(WechatHttpClient::POST_DATA_TYPE_BODY)->post($api, json_encode($arg, JSON_UNESCAPED_UNICODE));
         return $this->getClientResult($res);
     }
 
@@ -250,7 +250,7 @@ class WechatImmediateDelivery extends WechatBase
     public function mockUpdateOrder($args)
     {
         $args['shopid'] = 'test_shop_id';
-        $api = 'https://api.weixin.qq.com/cgi-bin/express/local/business/order/test_update_order?access_token=' . $this->getAccessToken();
+        $api = 'https://api.weixin.qq.com/cgi-bin/express/local/business/test_update_order?access_token=' . $this->getAccessToken();
         return $this->send($api, $args);
     }
 }
