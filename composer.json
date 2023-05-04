@@ -1,0 +1,25 @@
+{
+    "name": "cje/wechat",
+    "description": "简单便捷的微信sdk",
+    "type": "library",
+    "require": {
+        "php": ">=7.2.0",
+        "doctrine/cache": "<1.7",
+        "guzzlehttp/guzzle": "~6.0",
+        "ext-redis": "*",
+        "ext-memcached": "*",
+        "ext-curl": "*"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Cje\\Wechat\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "chengjien",
+            "email": "753717010@qq.com"
+        }
+    ]
+}
