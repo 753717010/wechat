@@ -12,6 +12,7 @@ namespace Cje\Wechat\helper;
 
 use Cje\Wechat\exception\WechatException;
 use Doctrine\Common\Cache\ApcuCache;
+use Doctrine\Common\Cache\Cache;
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\MemcachedCache;
 use Doctrine\Common\Cache\RedisCache;
@@ -23,6 +24,11 @@ class CacheHelper
     const CACHE_TARGET_MEMCACHED = 'memcached';
     const CACHE_TARGET_APCU = 'apcu';
 
+    /**
+     * @param $array
+     * @return Cache
+     * @throws WechatException
+     */
     public static function create($array = [])
     {
         $target = !empty($array['target']) ? $array['target'] : static::CACHE_TARGET_FILE;

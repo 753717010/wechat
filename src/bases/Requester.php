@@ -55,12 +55,12 @@ class Requester
      */
     public function post($api, $data, $params = [])
     {
-        $this->options = $this->options + [
+        $options = $this->options + [
                 CURLOPT_URL => $this->getUrl($api, $params),
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $data
             ];
-        return $this->execute();
+        return $this->execute($options);
     }
 
 
@@ -72,17 +72,17 @@ class Requester
      */
     public function get($api, $params = [])
     {
-        $this->options = $this->options + [
+        $options = $this->options + [
                 CURLOPT_URL => $this->getUrl($api, $params)
             ];
-        return $this->execute();
+        return $this->execute($options);
     }
 
-    public function execute()
+    public function execute($options)
     {
         $ch = curl_init();
 
-        curl_setopt_array($ch, $this->options);
+        curl_setopt_array($ch, $options);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($ch);
 
