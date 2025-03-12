@@ -8,19 +8,15 @@
  * @link: http://www.zjhejiang.com
  */
 
-namespace Cje\Wechat\wechat;
+namespace Cje\Wechat\miniApp;
 
-class Wechat
+use Cje\Wechat\bases\BaseClass;
+use Cje\Wechat\exception\WechatException;
+
+class Account extends BaseClass
 {
     protected $appId;
     protected $appSecret;
-
-    public function __construct($config = [])
-    {
-        foreach ($config as $key => $value) {
-            $this->$key = $value;
-        }
-    }
 
     public function getAppId()
     {
@@ -29,6 +25,9 @@ class Wechat
 
     public function getSecret()
     {
+        if ($this->appSecret === null) {
+            throw new WechatException('No secret configured.');
+        }
         return $this->appSecret;
     }
 }

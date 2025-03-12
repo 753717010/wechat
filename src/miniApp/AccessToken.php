@@ -8,10 +8,9 @@
  * @link: http://www.zjhejiang.com
  */
 
-namespace Cje\Wechat\wechat;
+namespace Cje\Wechat\miniApp;
 
-use Cje\Wechat\bases\Requester;
-use Cje\Wechat\bases\Response;
+use Cje\Wechat\bases\FormatRequest;
 use Cje\Wechat\exception\WechatException;
 use Cje\Wechat\helper\CacheHelper;
 use Doctrine\Common\Cache\Cache;
@@ -20,8 +19,6 @@ class AccessToken
 {
     protected $appId;
     protected $appSecret;
-    protected $requester;
-    protected $response;
     /**
      * @var Cache $cache
      */
@@ -33,15 +30,11 @@ class AccessToken
     public function __construct(
         $appId,
         $appSecret,
-        $cache = null,
-        $requester = null,
-        $response = null
+        $cache = null
     ) {
         $this->appSecret = $appSecret;
         $this->appId = $appId;
         $this->cache = $cache ?? CacheHelper::create(CacheHelper::defaultConfig());
-        $this->requester = $requester === null ? new Requester() : $requester;
-        $this->response = $response === null ? new Response() : $response;
     }
 
     /**
@@ -101,14 +94,18 @@ class AccessToken
         }
         $cacheKey = $this->key();
         $cacheKeyOk = $this->checkKey();
-        $raw = $this->requester->get('cgi-bin/token', array_merge([
-            'grant_type' => 'client_credential'
-        ], $this->accessTokenParams()));
-        $response = $this->response->parse($raw);
-        if (isset($response->parseData['errcode']) && $response->parseData['errcode'] !== 0) {
-            throw new WechatException($response->parseData['errmsg'], $response);
+        $result = (new FormatRequest([
+            'api' => 'cgi-bin/token',
+            'params' => array_merge([
+                'grant_type' => 'client_credential'
+            ], $this->accessTokenParams()),
+            'needAccessToken' => false
+        ]))->getSend();
+        $response = $result->getRspDatas();
+        if (isset($response['errcode']) && $response['errcode'] !== 0) {
+            throw new WechatException($response['errmsg'], $response);
         }
-        $this->accessToken = $response->parseData['access_token'];
+        $this->accessToken = $response['access_token'];
         $this->accessTokenOk = true;
         $this->cache->save($cacheKey, $this->accessToken, 7000);
         $this->cache->save($cacheKeyOk, true, 180);
@@ -134,12 +131,19 @@ class AccessToken
         }
         $this->accessTokenOk = false;
         try {
-            $raw = $this->requester->get('cgi-bin/getcallbackip', ['access_token' => $this->accessToken]);
-            $response = $this->response->parse($raw);
-            if ($response->isSuccess()) {
-                $this->accessTokenOk = true;
-                $this->cache->save($cacheKey, true, 180);
+            $result = (new FormatRequest([
+                'api' => 'cgi-bin/getcallbackip',
+                'params' => [
+                    'access_token' => $this->accessToken
+                ],
+                'needAccessToken' => false
+            ]))->getSend();
+            $response = $result->getRspDatas();
+            if (isset($response['errcode']) && $response['errcode'] !== 0) {
+                throw new WechatException($response['errmsg'], $response);
             }
+            $this->accessTokenOk = true;
+            $this->cache->save($cacheKey, true, 180);
         } catch (\Exception $e) {
         }
         return $this->accessTokenOk;
