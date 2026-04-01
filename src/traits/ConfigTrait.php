@@ -1,11 +1,6 @@
 <?php
 /**
- * Created By PhpStorm
- * User: 风哀伤
- * Date: 2025/3/6
- * Time: 1:57 PM
- * @copyright: ©2025 浙江禾匠信息科技
- * @link: http://www.zjhejiang.com
+ * Author: 风哀伤
  */
 
 namespace Cje\Wechat\traits;
@@ -26,7 +21,10 @@ trait ConfigTrait
     public function __construct($config)
     {
         $this->config = is_array($config) ? new Config($config) : $config;
+        $this->init();
     }
+
+    public function init() {}
 
     public function getConfig(): ConfigInterface
     {

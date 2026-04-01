@@ -1,11 +1,6 @@
 <?php
 /**
- * Created By PhpStorm
- * User: 风哀伤
- * Date: 2025/3/6
- * Time: 1:32 PM
- * @copyright: ©2025 浙江禾匠信息科技
- * @link: http://www.zjhejiang.com
+ * Author: 风哀伤
  */
 
 namespace Cje\Wechat\helper;
@@ -104,7 +99,7 @@ class ArrayHelper
             return $array->$key;
         }
 
-        if (static::exists($key, $array)) {
+        if (static::exists($array, $key)) {
             return $array[$key];
         }
 
@@ -113,7 +108,7 @@ class ArrayHelper
             $key = substr($key, $pos + 1);
         }
 
-        if (static::exists($key, $array)) {
+        if (static::exists($array, $key)) {
             return $array[$key];
         }
         if (is_object($array)) {

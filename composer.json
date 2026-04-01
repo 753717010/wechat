@@ -4,7 +4,9 @@
     "type": "library",
     "require": {
         "php": ">=7.2.0",
-        "doctrine/cache": "<1.7"
+        "doctrine/cache": "<1.7",
+        "guzzlehttp/guzzle": "~7.0",
+        "thenorthmemory/xml": "^1.0"
     },
     "license": "MIT",
     "autoload": {

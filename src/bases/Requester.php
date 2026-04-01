@@ -1,36 +1,124 @@
 <?php
 /**
- * Created By PhpStorm
- * User: 风哀伤
- * Date: 2023/5/4
- * Time: 2:19 PM
- * @copyright: ©2023 浙江禾匠信息科技
- * @link: http://www.zjhejiang.com
+ * Author: 风哀伤
+ * 基础请求类
  */
 
 namespace Cje\Wechat\bases;
 
 use Cje\Wechat\exception\WechatCurlException;
 use Cje\Wechat\helper\CurlHelper;
+use GuzzleHttp\Client;
 
 class Requester
 {
-    protected $gateway;
+    /**
+     * @var Client HTTP客户端
+     */
+    protected $client;
 
     /**
-     * @param array $options
+     * 请求上下文信息
+     * @var array
      */
-    public $options = [];
+    private $requestContext = [];
 
-    public function __construct($options = [], $gateway = 'https://api.weixin.qq.com')
+    /**
+     * Guzzle配置
+     * @var array
+     */
+    private $guzzleConfig = [
+        'base_uri' => 'https://api.weixin.qq.com',
+        'verify' => false,
+        'timeout' => 30,
+        'connect_timeout' => 10,
+        'http_errors' => false, // 不自动抛出HTTP错误
+    ];
+
+    /**
+     * 请求选项
+     * @var array
+     */
+    private $requestOptions = [];
+
+    public function __construct($options = [])
     {
-        $this->gateway = $gateway;
+        $this->guzzleConfig = array_merge($this->guzzleConfig, $options);
+    }
 
-        $this->options = $options + [
-                CURLOPT_FAILONERROR => false,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-            ];
+    /**
+     * 设置超时时间
+     * @param int $seconds
+     * @return self
+     */
+    public function setTimeout($seconds)
+    {
+        $this->guzzleConfig['timeout'] = $seconds;
+        $this->guzzleConfig['connect_timeout'] = $seconds;
+        
+        return $this;
+    }
+
+    /**
+     * 设置请求头
+     * @param array $headers
+     * @return self
+     */
+    public function setHeaders(array $headers)
+    {
+        $this->requestOptions['headers'] = $headers;
+        
+        return $this;
+    }
+
+    /**
+     * 设置请求上下文（用于错误追踪）
+     * @param string $key
+     * @param mixed $value
+     * @return self
+     */
+    public function setContext($key, $value)
+    {
+        $this->requestContext[$key] = $value;
+        
+        return $this;
+    }
+
+    /**
+     * 设置Guzzle选项
+     * @param array $options
+     * @return self
+     */
+    public function setOptions(array $options)
+    {
+        $this->guzzleConfig = array_merge($this->guzzleConfig, $options);
+        
+        return $this;
+    }
+
+    /**
+     * 设置认证
+     * @param string $username
+     * @param string $password
+     * @return self
+     */
+    public function setAuth($username, $password)
+    {
+        $this->requestOptions['auth'] = [$username, $password];
+        
+        return $this;
+    }
+
+    /**
+     * 设置查询参数
+     * @param array $params
+     * @return self
+     */
+    public function setQueryParams(array $params)
+    {
+        $this->requestOptions['query'] = $params;
+        
+        return $this;
     }
 
     /**
@@ -41,66 +129,105 @@ class Requester
      */
     public function getUrl($api, $params = [])
     {
-        return CurlHelper::appendParams(CurlHelper::getUrl($this->gateway, $api), $params);
+        return CurlHelper::appendParams(CurlHelper::getUrl($this->guzzleConfig['base_uri'], $api), $params);
     }
 
     /**
-     * 发起 POST 请求.
-     *
-     * @param $api
-     * @param array $data post请求参数
-     * @param array $params query请求参数
-     * @return bool|string
-     * @throws WechatCurlException
+     * POST请求 - Body格式
+     * @param string $uri
+     * @param mixed $data
+     * @param array $params
+     * @param string $contentType
+     * @return Response
      */
-    public function post($api, $data, $params = [])
+    public function postByBody($uri, $data = [], $params = [], $contentType = 'application/json')
     {
-        $options = $this->options + [
-                CURLOPT_URL => $this->getUrl($api, $params),
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $data
-            ];
-        return $this->execute($options);
+        $url = $this->getUrl($uri, $params);
+        $this->requestOptions['body'] = is_string($data) ? $data : json_encode($data, JSON_UNESCAPED_UNICODE);
+        $this->requestOptions['headers']['Content-Type'] = $contentType;
+        
+        return $this->request('POST', $url);
     }
 
+    /**
+     * POST请求 - JSON格式
+     * @param string $uri
+     * @param mixed $data
+     * @param array $params
+     * @return Response
+     */
+    public function postByJson($uri, $data = [], $params = [], $contentType = 'application/json')
+    {
+        $url = $this->getUrl($uri, $params);
+        $this->requestOptions['json'] = $data;
+        
+        return $this->request('POST', $url);
+    }
 
     /**
-     * @param $api
-     * @param $params
-     * @return bool|string
-     * @throws WechatCurlException
+     * POST请求 - Multipart格式
+     * @param string $uri
+     * @param array $data
+     * @param array $params
+     * @return Response
+     */
+    public function postByMultipart($uri, $data = [], $params = [])
+    {
+        $url = $this->getUrl($uri, $params);
+        $this->requestOptions['multipart'] = $data;
+        
+        return $this->request('POST', $url);
+    }
+
+    /**
+     * POST请求 - Form格式
+     * @param string $uri
+     * @param array $data
+     * @param array $params
+     * @return Response
+     */
+    public function postByForm($uri, $data = [], $params = [])
+    {
+        $url = $this->getUrl($uri, $params);
+        $this->requestOptions['form_params'] = $data;
+        return $this->request('POST', $url);
+    }
+
+    /**
+     * GET请求
+     * @param string $api
+     * @param array $params
+     * @return Response
      */
     public function get($api, $params = [])
     {
-        $options = $this->options + [
-                CURLOPT_URL => $this->getUrl($api, $params)
-            ];
-        return $this->execute($options);
+        $url = $this->getUrl($api, $params);
+        return $this->request('GET', $url);
     }
 
-    public function execute($options)
+    /**
+     * 执行请求
+     * @param string $method
+     * @param string $url
+     * @return Response
+     */
+    private function request($method, $url)
     {
-        $ch = curl_init();
-
-        curl_setopt_array($ch, $options);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $response = curl_exec($ch);
-
-        if ($response === false) {
-            curl_close($ch);
-
-            throw new WechatCurlException(curl_error($ch), curl_errno($ch));
+        $this->requestContext['request_url'] = $url;
+        $this->requestContext['request_method'] = $method;
+        $this->requestContext['request_time'] = date('Y-m-d H:i:s');
+        $this->requestContext['request_options'] = $this->requestOptions;
+        
+        try {
+            if (!$this->client) {
+                $this->client = new Client($this->guzzleConfig);
+            }
+            
+            $response = new Response($this->client->request($method, $url, $this->requestOptions), $this->requestContext);
+        } catch (\Exception $e) {
+            throw new WechatCurlException('网络连接失败', $e->getCode(), $e);
         }
-
-        $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if (200 !== $httpStatusCode) {
-            curl_close($ch);
-
-            throw new WechatCurlException($response, $httpStatusCode);
-        }
-
-        curl_close($ch);
-
+        
         return $response;
     }
 }

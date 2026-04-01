@@ -1,11 +1,7 @@
 <?php
 /**
- * Created By PhpStorm
- * User: 风哀伤
- * Date: 2025/3/6
- * Time: 1:26 PM
- * @copyright: ©2025 浙江禾匠信息科技
- * @link: http://www.zjhejiang.com
+ * 配置类
+ * Author: 风哀伤
  */
 
 namespace Cje\Wechat\bases;
@@ -33,11 +29,18 @@ class Config implements \ArrayAccess, ConfigInterface
         $this->checkMissingKeys();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function all(): array
     {
         return $this->config;
     }
 
+    /**
+     * @param string $key
+     * @return bool
+     */
     public function has(string $key): bool
     {
         return ArrayHelper::has($this->config, $key);
@@ -53,22 +56,37 @@ class Config implements \ArrayAccess, ConfigInterface
         return ArrayHelper::get($this->config, $key, $default);
     }
 
-    public function offsetExists($offset)
+    /**
+     * @param string $offset
+     * @return bool
+     */
+    public function offsetExists($offset): bool
     {
         return $this->has(strval($offset));
     }
 
-    public function offsetGet($offset)
+    /**
+     * @param string $offset
+     * @return mixed
+     */
+    public function offsetGet($offset): mixed
     {
         return $this->get(strval($offset));
     }
 
-    public function offsetSet($offset, $value)
+    /**
+     * @param string $offset
+     * @param mixed $value
+     */
+    public function offsetSet($offset, $value): void
     {
         $this->set(strval($offset), $value);
     }
 
-    public function offsetUnset($offset)
+    /**
+     * @param string $offset
+     */
+    public function offsetUnset($offset): void
     {
         $this->set(strval($offset), null);
     }
@@ -95,5 +113,20 @@ class Config implements \ArrayAccess, ConfigInterface
         }
 
         return true;
+    }
+
+    public function __get($name)
+    {
+        return $this->get($name);
+    }
+
+    public function __set($name, $value)
+    {
+        $this->set($name, $value);
+    }
+
+    public function merge(array $config)
+    {
+        $this->config = array_merge($this->config, $config);
     }
 }
