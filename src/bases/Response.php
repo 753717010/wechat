@@ -140,7 +140,7 @@ class Response
     public function getJson($asArray = true, $validator = null)
     {
         if (!$this->isSuccess()) {
-            throw new WechatException($this->getFirstError(), $this);
+            throw new WechatException($this->getMessage(), $this);
         }
         $content = $this->getContent();
         
@@ -247,6 +247,11 @@ class Response
     public function getLastError()
     {
         return !empty($this->getErrors()) ? end($this->getErrors()) : null;
+    }
+
+    public function getMessage()
+    {
+        return $this->getFirstError()['message'] ?? null;
     }
 
     /**

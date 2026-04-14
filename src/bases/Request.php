@@ -1,25 +1,48 @@
 <?php
 /**
- * Author: 风哀伤
- * 接口类
+ * 请求基类
+ * 定义API请求的基本结构和方法
+ * 
+ * @author 风哀伤
  */
 
 namespace Cje\Wechat\bases;
 
-abstract class Request extends \Cje\Wechat\bases\BaseClass
+abstract class Request extends BaseClass
 {
-    protected $needAccessToken;
+    /**
+     * 是否需要访问令牌
+     * @var bool
+     */
+    protected $needAccessToken = true;
+    
+    /**
+     * API路径
+     * @var string
+     */
     protected $api;
 
-    public function getNeedAccessToken()
+    /**
+     * 获取是否需要访问令牌
+     * @return bool
+     */
+    public function getNeedAccessToken(): bool
     {
         return $this->needAccessToken;
     }
 
-    public function getApi()
+    /**
+     * 获取API路径
+     * @return string
+     */
+    public function getApi(): string
     {
         return $this->api;
     }
 
-    abstract public function build();
+    /**
+     * 构建请求参数
+     * @return array
+     */
+    abstract public function build(): array;
 }

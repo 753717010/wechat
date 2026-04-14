@@ -6,9 +6,14 @@
 namespace Cje\Wechat\traits;
 
 use Cje\Wechat\helper\CacheHelper;
+use  Doctrine\Common\Cache\Cache;
 
 trait CacheTrait
 {
+    /**
+     * 缓存类
+     * @var Cache
+     */
     protected $cache;
 
     /**

@@ -1,7 +1,9 @@
 <?php
 /**
- * Author: 风哀伤
  * 基础请求类
+ * 处理HTTP请求，支持多种请求格式和请求重试
+ * 
+ * @author 风哀伤
  */
 
 namespace Cje\Wechat\bases;
@@ -9,11 +11,14 @@ namespace Cje\Wechat\bases;
 use Cje\Wechat\exception\WechatCurlException;
 use Cje\Wechat\helper\CurlHelper;
 use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 
 class Requester
 {
     /**
-     * @var Client HTTP客户端
+     * HTTP客户端
+     * @var Client
      */
     protected $client;
 
@@ -41,9 +46,53 @@ class Requester
      */
     private $requestOptions = [];
 
+    /**
+     * 最大重试次数
+     * @var int
+     */
+    private $maxRetries = 3;
+
+    /**
+     * 构造函数
+     * 
+     * @param array $options Guzzle配置选项
+     */
     public function __construct($options = [])
     {
         $this->guzzleConfig = array_merge($this->guzzleConfig, $options);
+        $this->initClient();
+    }
+
+    /**
+     * 初始化HTTP客户端
+     * 添加请求重试中间件
+     */
+    private function initClient()
+    {
+        $stack = HandlerStack::create();
+        
+        // 添加重试中间件
+        $stack->push(Middleware::retry(function ($retries, $request, $response, $exception) {
+            // 只对网络错误和500错误进行重试
+            return $retries < $this->maxRetries && (
+                $exception instanceof \GuzzleHttp\Exception\ConnectException ||
+                ($response && $response->getStatusCode() >= 500)
+            );
+        }, function ($retries) {
+            // 指数退避策略
+            return 1000 * pow(2, $retries);
+        }));
+        
+        $this->guzzleConfig['handler'] = $stack;
+        $this->client = new Client($this->guzzleConfig);
+    }
+
+    /**
+     * 重置请求选项
+     */
+    private function resetRequestOptions()
+    {
+        $this->requestOptions = [];
     }
 
     /**
@@ -51,7 +100,7 @@ class Requester
      * @param int $seconds
      * @return self
      */
-    public function setTimeout($seconds)
+    public function setTimeout(int $seconds): self
     {
         $this->guzzleConfig['timeout'] = $seconds;
         $this->guzzleConfig['connect_timeout'] = $seconds;
@@ -64,7 +113,7 @@ class Requester
      * @param array $headers
      * @return self
      */
-    public function setHeaders(array $headers)
+    public function setHeaders(array $headers): self
     {
         $this->requestOptions['headers'] = $headers;
         
@@ -77,7 +126,7 @@ class Requester
      * @param mixed $value
      * @return self
      */
-    public function setContext($key, $value)
+    public function setContext(string $key, $value): self
     {
         $this->requestContext[$key] = $value;
         
@@ -89,9 +138,11 @@ class Requester
      * @param array $options
      * @return self
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): self
     {
         $this->guzzleConfig = array_merge($this->guzzleConfig, $options);
+        // 重新初始化客户端
+        $this->initClient();
         
         return $this;
     }
@@ -102,7 +153,7 @@ class Requester
      * @param string $password
      * @return self
      */
-    public function setAuth($username, $password)
+    public function setAuth(string $username, string $password): self
     {
         $this->requestOptions['auth'] = [$username, $password];
         
@@ -114,7 +165,7 @@ class Requester
      * @param array $params
      * @return self
      */
-    public function setQueryParams(array $params)
+    public function setQueryParams(array $params): self
     {
         $this->requestOptions['query'] = $params;
         
@@ -123,11 +174,11 @@ class Requester
 
     /**
      * 拼接请求地址
-     * @param $api
-     * @param $params
-     * @return mixed|string
+     * @param string $api
+     * @param array $params
+     * @return string
      */
-    public function getUrl($api, $params = [])
+    public function getUrl(string $api, array $params = []): string
     {
         return CurlHelper::appendParams(CurlHelper::getUrl($this->guzzleConfig['base_uri'], $api), $params);
     }
@@ -140,7 +191,7 @@ class Requester
      * @param string $contentType
      * @return Response
      */
-    public function postByBody($uri, $data = [], $params = [], $contentType = 'application/json')
+    public function postByBody(string $uri, $data = [], array $params = [], string $contentType = 'application/json'): Response
     {
         $url = $this->getUrl($uri, $params);
         $this->requestOptions['body'] = is_string($data) ? $data : json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -156,7 +207,7 @@ class Requester
      * @param array $params
      * @return Response
      */
-    public function postByJson($uri, $data = [], $params = [], $contentType = 'application/json')
+    public function postByJson(string $uri, $data = [], array $params = []): Response
     {
         $url = $this->getUrl($uri, $params);
         $this->requestOptions['json'] = $data;
@@ -171,7 +222,7 @@ class Requester
      * @param array $params
      * @return Response
      */
-    public function postByMultipart($uri, $data = [], $params = [])
+    public function postByMultipart(string $uri, array $data = [], array $params = []): Response
     {
         $url = $this->getUrl($uri, $params);
         $this->requestOptions['multipart'] = $data;
@@ -186,7 +237,7 @@ class Requester
      * @param array $params
      * @return Response
      */
-    public function postByForm($uri, $data = [], $params = [])
+    public function postByForm(string $uri, array $data = [], array $params = []): Response
     {
         $url = $this->getUrl($uri, $params);
         $this->requestOptions['form_params'] = $data;
@@ -199,7 +250,7 @@ class Requester
      * @param array $params
      * @return Response
      */
-    public function get($api, $params = [])
+    public function get(string $api, array $params = []): Response
     {
         $url = $this->getUrl($api, $params);
         return $this->request('GET', $url);
@@ -210,8 +261,9 @@ class Requester
      * @param string $method
      * @param string $url
      * @return Response
+     * @throws WechatCurlException
      */
-    private function request($method, $url)
+    private function request(string $method, string $url): Response
     {
         $this->requestContext['request_url'] = $url;
         $this->requestContext['request_method'] = $method;
@@ -219,13 +271,13 @@ class Requester
         $this->requestContext['request_options'] = $this->requestOptions;
         
         try {
-            if (!$this->client) {
-                $this->client = new Client($this->guzzleConfig);
-            }
-            
             $response = new Response($this->client->request($method, $url, $this->requestOptions), $this->requestContext);
         } catch (\Exception $e) {
-            throw new WechatCurlException('网络连接失败', $e->getCode(), $e);
+            $errorMsg = sprintf('网络连接失败: %s', $e->getMessage());
+            throw new WechatCurlException($errorMsg, $e->getCode(), $e, $this->requestContext);
+        } finally {
+            // 重置请求选项，避免参数污染
+            $this->resetRequestOptions();
         }
         
         return $response;

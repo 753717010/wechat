@@ -17,6 +17,7 @@ use Cje\Wechat\bases\Message as BaseMessage;
  * @property string $MsgType
  * @property string $Event
  * @property string $CreateTime
+ * @property string $Event
  */
 class Message extends BaseMessage
 {

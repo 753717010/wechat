@@ -47,7 +47,7 @@ class Getwxacode extends \Cje\Wechat\bases\Request
      */
     public $env_version = 'release';
 
-    public function build()
+    public function build(): array
     {
         return [
             'path' => $this->path,
