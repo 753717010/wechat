@@ -45,4 +45,6 @@ abstract class Request extends BaseClass
      * @return array
      */
     abstract public function build(): array;
+
+    abstract public function getMethod(): string;
 }

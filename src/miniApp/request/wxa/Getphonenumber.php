@@ -17,10 +17,15 @@ class Getphonenumber extends \Cje\Wechat\bases\Request
      */
     public $code;
 
-    public function build()
+    public function build(): array
     {
         return [
             'code' => $this->code,
         ];
+    }
+
+    public function getMethod(): string
+    {
+        return 'POST';
     }
 }

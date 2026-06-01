@@ -57,4 +57,9 @@ class Getwxacode extends \Cje\Wechat\bases\Request
             'env_version' => $this->env_version,
         ];
     }
+
+    public function getMethod(): string
+    {
+        return 'POST';
+    }
 }

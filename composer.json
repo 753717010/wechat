@@ -19,5 +19,8 @@
             "name": "chengjien",
             "email": "753717010@qq.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
+    }
 }

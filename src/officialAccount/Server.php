@@ -7,6 +7,7 @@ namespace Cje\Wechat\officialAccount;
 
 use Cje\Wechat\bases\Encryptor;
 use Cje\Wechat\exception\InvalidArgumentException;
+use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
 
 class Server
@@ -108,5 +109,22 @@ class Server
         $message->encryptStr = $this->encryptor->decrypt((string)$message->Encrypt);
         $message->merge($message->parse($message->encryptStr));
         return $message;
+    }
+
+    public function server($data = [])
+    {
+        $response = new Response(200, [], ($this->encryptor ? $this->encryptMessage($data) : $this->noEncryptMessage($data)));
+        return $response;
+    }
+
+    public function encryptMessage($data = [])
+    {
+        $data = $this->encryptor->encrypt($data);
+        return $data;
+    }
+
+    public function noEncryptMessage($data = [])
+    {
+        return $data;
     }
 }
